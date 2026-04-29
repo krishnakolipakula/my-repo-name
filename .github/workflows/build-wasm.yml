@@ -29,19 +29,23 @@ jobs:
           chmod +x submission/project3/regen_ll.sh
           ./submission/project3/regen_ll.sh
 
-      - name: Install LLVM and LLD
+      - name: Install LLVM and wasi-sdk
         run: |
           sudo apt-get update
           sudo apt-get install -y clang lld llvm
+          # Install wasi-sdk
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0-linux.tar.gz
+          tar -xzf wasi-sdk-20.0-linux.tar.gz -C /opt
 
       - name: Build WASM from generated IR
         run: |
+          export WASI_SDK=/opt/wasi-sdk-20.0
           cd submission/project3/llvm_output
           for f in generated_*.ll; do
             base="${f%.ll}"
             echo "Building $base"
-            llc -mtriple=wasm32-unknown-unknown -filetype=obj -o "${base}.o" "$f"
-            wasm-ld --no-entry --export-all -o "${base}.wasm" "${base}.o"
+            llc -mtriple=wasm32-wasi -filetype=obj -o "${base}.o" "$f"
+            clang --target=wasm32-wasi --sysroot=$WASI_SDK/share/wasi-sysroot -o "${base}.wasm" "${base}.o" -Wl,--export-all
           done
 
       - name: Upload WASM artifacts
