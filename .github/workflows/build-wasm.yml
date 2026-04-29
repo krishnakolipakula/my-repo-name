@@ -40,12 +40,13 @@ jobs:
       - name: Build WASM from generated IR
         run: |
           export WASI_SDK=/opt/wasi-sdk-20.0
+          export PATH=$WASI_SDK/bin:$PATH
           cd submission/project3/llvm_output
           for f in generated_*.ll; do
             base="${f%.ll}"
             echo "Building $base"
             llc -mtriple=wasm32-wasi -filetype=obj -o "${base}.o" "$f"
-            clang --target=wasm32-wasi --sysroot=$WASI_SDK/share/wasi-sysroot -o "${base}.wasm" "${base}.o" -Wl,--export-all
+            clang --target=wasm32-wasi --sysroot=$WASI_SDK/share/wasi-sysroot -o "${base}.wasm" "${base}.o" -Wl,--export-all -lc
           done
 
       - name: Upload WASM artifacts
