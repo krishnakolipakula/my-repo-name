@@ -1,9 +1,8 @@
 # Project 3: Delphi/Pascal to LLVM IR Compiler
 
 ## Team Members
-
-Krishna Chaitanya Kolipakula (UFID: 94059870)
-Karthikeya Ruthvik Pakki (UFID: 52291889)
+- Krishna Chaitanya Kolipakula (UFID: 94059870)
+- Karthikeya Ruthvik Pakki (UFID: 52291889)
 
 ## Overview
 
@@ -39,101 +38,171 @@ The tests folder contains four Pascal source files that demonstrate the compiler
 
 To use the compiler, first make sure you have Java 11 or higher and Maven installed on your system.
 
-From the submission/project3 directory, you can either use the pre-built JAR file that's already included, or rebuild it yourself.
+**Using the Pre-built JAR**
 
-To use the pre-built JAR, simply run:
+We've included a compiled JAR file that's ready to use. From the submission/project3 directory, you can immediately compile Pascal files to LLVM IR:
 
-java -cp target/delphi-0.1-SNAPSHOT-jar-with-dependencies.jar Compiler tests/test_simple.pas llvm_output/output.ll
+    cd submission/project3
+    java -cp target/delphi-0.1-SNAPSHOT-jar-with-dependencies.jar Compiler tests/test_simple.pas llvm_output/output.ll
 
-This reads the Pascal file and writes the generated LLVM IR to output.ll.
+This command reads test_simple.pas and writes the generated LLVM IR to output.ll.
 
-To rebuild the compiler from source, use Maven:
+**Rebuilding from Source**
 
-mvn clean package
+If you want to rebuild the compiler, use Maven:
 
-This creates the JAR file in the target directory. If you prefer, you can also build and run directly with Maven without creating a JAR:
+    mvn clean package
 
-mvn exec:java -Dexec.mainClass=Compiler -Dexec.args="tests/test_simple.pas llvm_output/generated.ll"
+This compiles everything and creates the JAR file in the target directory.
 
-We also included a helper script called regen_ll.sh that rebuilds everything and regenerates all the test LLVM IR files at once. Just run:
+Alternatively, you can build and run directly without creating a JAR:
 
-chmod +x regen_ll.sh
-./regen_ll.sh
+    mvn exec:java -Dexec.mainClass=Compiler -Dexec.args="tests/test_simple.pas llvm_output/generated.ll"
+
+**Quick Regeneration of All Test Files**
+
+We included a helper script that rebuilds everything and regenerates all test LLVM IR files in one go:
+
+    chmod +x regen_ll.sh
+    ./regen_ll.sh
+
+This will compile all four test Pascal programs and produce the corresponding .ll files.
 
 ## Test Programs
 
 We provide four test Pascal programs to demonstrate the compiler's capabilities.
 
-**test_simple.pas:** A basic test that adds two numbers and prints the result. It declares two integer variables, assigns 5 to one and 3 to the other, then prints their sum. The expected output is 8.
+**test_simple.pas:** A basic test that adds two numbers and prints the result.
 
-**test_loops.pas:** Tests loop functionality. It prints 7, then uses a for loop to count from 1 to 3, then counts back down from 3 to 1. The expected output is: 7 1 2 3 3 2 1
+    var x: integer;
+    var y: integer;
+    begin
+      x := 5;
+      y := 3;
+      writeln(x + y);
+    end.
 
-**test_arithmetic.pas:** Demonstrates more complex arithmetic with multiple operations. It adds 10 and 5 to get 15, multiplies and subtracts to get 45, then performs a chain of operations to get 30. Expected output: 15 45 30
+Expected output: 8
 
-**test_routines.pas:** Shows function definitions and calls. It defines an add function that takes two integers and returns their sum, then calls it twice with different arguments. Expected output: 5 15
+**test_loops.pas:** Tests loop functionality with for loops.
+
+    var i: integer;
+    begin
+      writeln(7);
+      for i := 1 to 3 do writeln(i);
+      for i := 3 downto 1 do writeln(i);
+    end.
+
+Expected output: 7 1 2 3 3 2 1
+
+**test_arithmetic.pas:** Demonstrates more complex arithmetic with multiple operations.
+
+    var a, b, c: integer;
+    begin
+      a := 10;
+      b := 5;
+      writeln(a + b);
+      writeln(a * b - b);
+      writeln(a * b / 5 * 3);
+    end.
+
+Expected output: 15 45 30
+
+**test_routines.pas:** Shows function definitions and calls.
+
+    function add(x: integer; y: integer): integer
+    begin
+      add := x + y;
+    end;
+    
+    begin
+      writeln(add(2, 3));
+      writeln(add(5, 10));
+    end.
+
+Expected output: 5 15
 
 ## Generating LLVM IR
 
-Once you have the compiler JAR built, you can generate LLVM IR from any Pascal program:
+Once you have the compiler JAR built, you can generate LLVM IR from any Pascal program. The basic command is:
 
-To compile test_simple.pas, run:
+    java -cp target/delphi-0.1-SNAPSHOT-jar-with-dependencies.jar Compiler <input.pas> <output.ll>
 
-java -cp target/delphi-0.1-SNAPSHOT-jar-with-dependencies.jar Compiler tests/test_simple.pas llvm_output/my_output.ll
+For example, to compile test_simple.pas:
+
+    java -cp target/delphi-0.1-SNAPSHOT-jar-with-dependencies.jar Compiler tests/test_simple.pas llvm_output/my_output.ll
 
 The first argument is the input Pascal file, and the second is where to write the generated LLVM IR. The output will be a valid LLVM IR file that can be compiled with standard LLVM tools.
 
+To generate all test files at once:
+
+    for test in tests/test_*.pas; do
+      outfile="llvm_output/generated_$(basename $test .pas).ll"
+      java -cp target/delphi-0.1-SNAPSHOT-jar-with-dependencies.jar Compiler "$test" "$outfile"
+    done
+
 ## Compiling Generated IR to Native Code
 
-Once you have a LLVM IR file (a .ll file), you can compile it to a native executable using clang:
+Once you have a LLVM IR file (a .ll file), compile it to a native executable using clang:
 
-clang output.ll -o my_program
-
-Then run the resulting executable:
-
-./my_program
+    clang llvm_output/output.ll -o my_program
+    ./my_program
 
 The output should match the expected results from the Pascal program.
 
-To test all four programs at once, you can use a loop:
+To compile and test all four programs:
 
-for f in llvm_output/generated_*.ll; do
-  base=$(basename "$f" .ll)
-  clang "$f" -o "$base"_exe
-  echo "Running $base:"
-  ./"$base"_exe
-done
+    cd llvm_output
+    
+    for f in generated_*.ll; do
+      base=$(basename "$f" .ll)
+      echo "Compiling $base..."
+      clang "$f" -o "${base}_exe"
+      echo "Running $base:"
+      ./"${base}_exe"
+      echo ""
+    done
+
+This will compile each LLVM IR file to an executable and run it, showing the output from each test.
 
 ## Compiling to WebAssembly
 
-We also added support for compiling the generated LLVM IR to WebAssembly binaries. The pre-built .wasm files are already included in the llvm_output directory (generated_simple.wasm, generated_loops.wasm, etc.) and were automatically built by our GitHub Actions CI workflow.
+We also added support for compiling the generated LLVM IR to WebAssembly binaries. The pre-built .wasm files are already included in the llvm_output directory and were automatically built by our GitHub Actions CI workflow.
 
-If you want to build WebAssembly files locally, you'll need LLVM tools installed. First convert the LLVM IR to an object file:
+If you want to build WebAssembly files locally, you'll need LLVM tools installed. The process has two steps:
 
-llc -mtriple=wasm32-wasi -filetype=obj -o program.o program.ll
+First, convert the LLVM IR to an object file:
+
+    llc -mtriple=wasm32-wasi -filetype=obj -o program.o program.ll
 
 Then link it to create a WebAssembly module:
 
-wasm-ld --no-entry --allow-undefined --export-all -o program.wasm program.o
+    wasm-ld --no-entry --allow-undefined --export-all -o program.wasm program.o
 
-The resulting .wasm file is a valid WebAssembly module that can be loaded and executed in a web browser.
+To build WebAssembly for all test programs:
+
+    cd llvm_output
+    
+    for f in generated_*.ll; do
+      base=$(basename "$f" .ll)
+      echo "Building $base.wasm..."
+      llc -mtriple=wasm32-wasi -filetype=obj -o "${base}.o" "$f"
+      wasm-ld --no-entry --allow-undefined --export-all -o "${base}.wasm" "${base}.o"
+    done
+
+The resulting .wasm files are valid WebAssembly modules that can be loaded and executed in a web browser.
 
 ## Using the Browser Viewer
 
-We included a browser-based LLVM IR viewer in index.html. To use it, open the file in any modern web browser. If you encounter issues with loading local files, you can start a simple HTTP server:
+We included a browser-based LLVM IR viewer in index.html. To use it, first start a local HTTP server:
 
-python3 -m http.server 8000
+    python3 -m http.server 8000
 
-Then visit http://localhost:8000/index.html in your browser.
+Then open your browser and visit:
 
-The viewer allows you to:
+    http://localhost:8000/index.html
 
-Load LLVM IR files or WebAssembly modules from the llvm_output directory. Just enter the file path and click Load.
-
-Analyze the structure of the IR, including the functions, basic blocks, and instructions it contains.
-
-Simulate execution to trace through how the IR operates and see how memory and registers change.
-
-For WebAssembly files, you can execute them directly in the browser and see the output captured from any printf calls.
+The viewer allows you to load LLVM IR files or WebAssembly modules from the llvm_output directory, analyze their structure, and simulate execution. For WebAssembly files, you can execute them directly in the browser and see the output captured from any printf calls.
 
 ## Generated IR Files
 
