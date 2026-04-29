@@ -20,7 +20,9 @@ jobs:
           java-version: '17'
 
       - name: Build project JAR
-        run: mvn -B -DskipTests package
+        run: |
+          cd submission/project3
+          mvn -B -DskipTests package
 
       - name: Generate LLVM IR
         run: |
