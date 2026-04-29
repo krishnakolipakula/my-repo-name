@@ -1,0 +1,1 @@
+: CUBE DUP DUP * * ; 4 CUBE . CR 2 CUBE .

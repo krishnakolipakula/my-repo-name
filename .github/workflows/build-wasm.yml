@@ -1,0 +1,49 @@
+name: Build WASM artifacts
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build project JAR
+        run: mvn -B -DskipTests package
+
+      - name: Generate LLVM IR
+        run: |
+          chmod +x submission/project3/regen_ll.sh
+          ./submission/project3/regen_ll.sh
+
+      - name: Install LLVM and LLD
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm
+
+      - name: Build WASM from generated IR
+        run: |
+          cd submission/project3/llvm_output
+          for f in generated_*.ll; do
+            base="${f%.ll}"
+            echo "Building $base"
+            llc -mtriple=wasm32-unknown-unknown -filetype=obj -o "${base}.o" "$f"
+            wasm-ld --no-entry --export-all -o "${base}.wasm" "${base}.o"
+          done
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-artifacts
+          path: submission/project3/llvm_output/*.wasm

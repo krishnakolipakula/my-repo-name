@@ -1,0 +1,1 @@
+: DOUBLE 2 * ; : SQUARE DUP * ; 3 DOUBLE SQUARE .

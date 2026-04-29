@@ -1,0 +1,1 @@
+: DOUBLE 2 * ; : QUAD DOUBLE DOUBLE ; 3 QUAD .
