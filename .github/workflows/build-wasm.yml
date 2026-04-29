@@ -46,7 +46,7 @@ jobs:
             base="${f%.ll}"
             echo "Building $base"
             llc -mtriple=wasm32-wasi -filetype=obj -o "${base}.o" "$f"
-            clang --target=wasm32-wasi --sysroot=$WASI_SDK/share/wasi-sysroot -o "${base}.wasm" "${base}.o" -Wl,--export-all -lc
+            wasm-ld --no-entry --allow-undefined --export-all -o "${base}.wasm" "${base}.o"
           done
 
       - name: Upload WASM artifacts
